@@ -27,9 +27,8 @@ setup(
     ],
     setup_requires=["pytest-runner"],
     tests_require=[
-        "pytest==3.1.2",
+        "pytest>=7.2.0",
         "HTTPretty",
-        "pytest_httpretty",
     ],
     install_requires=[
         "requests",

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-import os
 import re
+from pathlib import Path
 from urllib.parse import urlparse
 
 import httpretty
@@ -8,16 +8,17 @@ import pytest
 
 from tfs import TFSAPI
 
+resource_path = Path(__file__).parent.resolve() / 'resources'
+
 
 def request_callback_get(request, uri, headers):
     # Map path from url to a file
     path = urlparse(uri).path.split("DefaultCollection/")[1]
-    response_file = os.path.normpath("tests/resources/{}".format(path))
-    response_file = os.path.join(response_file, "response.json")
+    response_file = resource_path / path / "response.json"
 
-    if os.path.exists(response_file):
+    if response_file.exists():
         code = 200
-        response = open(response_file, mode="r", encoding="utf-8-sig").read()
+        response = response_file.read_text(encoding="utf-8-sig")
     else:
         code = 404
         response = "Cannot find file {}".format(response_file)
@@ -34,11 +35,12 @@ def tfs_server_mock():
             body=request_callback_get,
             content_type="application/json",
         )
+    yield
+    httpretty.reset()
 
 
 @pytest.fixture()
 def tfsapi():
-    client = TFSAPI(
-        "http://tfs.tfs.ru/tfs", "DefaultCollection/MyProject", "username", "password"
-    )
-    yield client
+    httpretty.enable()
+    yield TFSAPI("http://tfs.tfs.ru/tfs", "DefaultCollection/MyProject", "username", "password")
+    httpretty.disable()
